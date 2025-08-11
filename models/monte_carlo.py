@@ -108,13 +108,14 @@ class MonteCarloPricer:
             # Calculate optimal coefficient
             cov = np.cov(np.stack((discounted_payoffs, payoffs)))[0, 1]
             var = np.var(payoffs)
-            theta = cov / var
+            theta = cov / var if var != 0 else 0
             
             # Control variate estimate
             cv_price = mc_price - theta * (np.mean(payoffs) - bs_price)
             
-            # Estimate standard error (simplified)
-            cv_std = mc_std * sqrt(1 - (cov**2)/(var * np.var(discounted_payoffs)))
+            # Estimate standard error (with safety check)
+            variance_ratio = (cov**2) / (var * np.var(discounted_payoffs)) if var != 0 and np.var(discounted_payoffs) != 0 else 0
+            cv_std = mc_std * sqrt(max(0, 1 - variance_ratio))  # Ensure non-negative under sqrt
             
             return {
                 'price': cv_price,

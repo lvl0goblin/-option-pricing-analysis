@@ -24,6 +24,15 @@ class OptionBacktester:
         df['date'] = pd.to_datetime(df['date'])
         df['days_to_expiry'] = (df['expiry'] - df['date']).dt.days
         df['T'] = df['days_to_expiry'] / 365
+        
+        # Calculate mid_price if not already present
+        if 'mid_price' not in df.columns and 'bid' in df.columns and 'ask' in df.columns:
+            df['mid_price'] = (df['bid'] + df['ask']) / 2
+        elif 'last_price' in df.columns:
+            df['mid_price'] = df['last_price']
+        else:
+            raise ValueError("Data must contain either 'bid/ask' or 'last_price' columns")
+            
         return df
     
     def run_backtest(self, data_file, sample_size=None, use_mc=False):
@@ -66,7 +75,7 @@ class OptionBacktester:
             
             # Calculate errors
             error = model_price - market_price
-            pct_error = 100 * error / market_price
+            pct_error = 100 * error / market_price if market_price != 0 else 0
             
             results.append({
                 'date': row['date'],
